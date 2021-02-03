@@ -3,7 +3,7 @@
   <head>
     <title>Add Map</title>
     <script
-      src="{{ getenv('Gmaps') }}"
+      src="https://maps.googleapis.com/maps/api/js?key={{ getenv('GmapsAPI') }}&callback=initMap&libraries=&v=weekly"
       defer
     ></script>
     <style>
@@ -22,12 +22,13 @@
     <div id="map"></div>
   </body>
 </html>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
 <script>
 let map;
 let markers = [];
 
 function initMap() {
-  const haightAshbury = { lat: -25.363, lng: 131.044 };
+  const haightAshbury = { lat : -6.91757808164908, lng : 107.60850421142572 };
   
   map = new google.maps.Map(document.getElementById("map"), {
     zoom: 12,
@@ -38,7 +39,41 @@ function initMap() {
   map.addListener("click", (event) => {
     deleteMarkers();
     addMarker(event.latLng);
-    console.log(JSON.stringify(event.latLng.toJSON(), null, 2));
+    const lat = event.latLng.lat();
+    const lng = event.latLng.lng();
+    const latlng = lat + lng;
+    $.ajax({
+      url: "https://maps.googleapis.com/maps/api/geocode/json?latlng="+lat+","+lng+"&key={{ getenv('GmapsAPI') }}",
+      type: 'POST',
+      data: JSON,
+      cache: false,
+      contentType: false,
+      processData: false,
+      success: function (response) {
+        // console.log(response.results[0].address_components);
+        var iniindex = 0;
+        for (let index = 0; index < response.results[0].address_components.length; index++) {
+          const results = response.results[0].address_components[index].types;
+          // console.log(results);
+          for (let indexx = 0; indexx < results.length; indexx++) {
+            const element = results[indexx];
+            // console.log(element);
+            if(element == 'postal_code'){
+              iniindex = iniindex+index;
+            }
+          }
+        }
+        for (let index = 0; index < response.results[0].address_components.length; index++) {
+          const postal_code = response.results[0].address_components[iniindex].long_name;
+          console.log('postal_code : ' + postal_code);
+        }
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+          alert('Error adding / update data');
+          $('#btnSimpan').text('Simpan');
+          $('#btnSimpan').attr('disabled', false);
+      }
+    });
   });
   // Adds a marker at the center of the map.
   addMarker(haightAshbury);
